@@ -1,0 +1,178 @@
+    }
+    optsList.innerHTML = html;
+
+    var radios = optsList.querySelectorAll('input[type="radio"]');
+    for (var j = 0; j < radios.length; j++) {
+      radios[j].addEventListener('change', onSelect);
+    }
+
+    qText.focus();
+  }
+
+  function onSelect(e) {
+    if (answered) return;
+    selectedIdx = parseInt(e.target.value);
+    var items = optsList.querySelectorAll('.mcq-option');
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.remove('selected');
+    }
+    items[selectedIdx].classList.add('selected');
+    nextBtn.disabled = false;
+  }
+
+  nextBtn.addEventListener('click', function() {
+    if (selectedIdx < 0) return;
+
+    if (!answered) {
+      answered = true;
+      var q = questions[currentQ];
+      var items = optsList.querySelectorAll('.mcq-option');
+
+      var radios = optsList.querySelectorAll('input[type="radio"]');
+      for (var r = 0; r < radios.length; r++) radios[r].disabled = true;
+
+      if (selectedIdx === q.correct) {
+        items[selectedIdx].classList.add('correct');
+        feedback.className = 'mcq-feedback visible correct';
+        feedback.textContent = STRINGS.quizCorrect;
+        score++;
+      } else {
+        items[selectedIdx].classList.add('incorrect');
+        items[q.correct].classList.add('correct');
+        feedback.className = 'mcq-feedback visible incorrect';
+        feedback.textContent = STRINGS.quizIncorrect + q.opts[q.correct] + '. You will learn more in the course.';
+      }
+
+      setTimeout(function() { advanceQuestion(); }, 1800);
+      return;
+    }
+
+    advanceQuestion();
+  });
+
+  function advanceQuestion() {
+    currentQ++;
+    if (currentQ >= questions.length) {
+      showResults();
+    } else {
+      renderQuestion();
+    }
+  }
+
+  function showResults() {
+    quizArea.style.display = 'none';
+    results.classList.add('visible');
+    progress.style.width = '100%';
+    scoreEl.textContent = STRINGS.quizScore.replace('{score}', score);
+    results.querySelector('.mcq-results-emoji').textContent = '🎉';
+
+    if (score === 5) {
+      messageEl.textContent = STRINGS.quizExcellent;
+    } else if (score >= 3) {
+      messageEl.textContent = STRINGS.quizGood;
+    } else {
+      messageEl.textContent = STRINGS.quizBeginner;
+    }
+  }
+
+  retakeBtn.addEventListener('click', function() {
+    currentQ = 0;
+    score = 0;
+    quizArea.style.display = '';
+    results.classList.remove('visible');
+    renderQuestion();
+  });
+
+  renderQuestion();
+})();
+
+// ===== SUPPORT FORM =====
+(function() {
+  var form = document.getElementById('support-form');
+  var success = document.getElementById('support-success');
+  var textarea = document.getElementById('sup-message');
+  var charCount = document.getElementById('sup-char-count');
+
+  textarea.addEventListener('input', function() {
+    charCount.textContent = textarea.value.length;
+  });
+
+  var fields = [
+    { id: 'sup-name', err: 'err-sup-name', validate: function(v) { return v.trim().length > 0; } },
+    { id: 'sup-email', err: 'err-sup-email', validate: function(v) { return isValidEmail(v); } },
+    { id: 'sup-topic', err: 'err-sup-topic', validate: function(v) { return v.length > 0; } },
+    { id: 'sup-message', err: 'err-sup-message', validate: function(v) { return v.trim().length > 0; } }
+  ];
+
+  for (var i = 0; i < fields.length; i++) {
+    (function(f) {
+      var el = document.getElementById(f.id);
+      if (el) {
+        el.addEventListener('blur', function() {
+          if (!f.validate(el.value)) showError(f.id, f.err);
+          else clearError(f.id, f.err);
+        });
+        el.addEventListener('input', function() { clearError(f.id, f.err); });
+      }
+    })(fields[i]);
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var errors = [];
+
+    for (var i = 0; i < fields.length; i++) {
+      var el = document.getElementById(fields[i].id);
+      if (!fields[i].validate(el.value)) {
+        showError(fields[i].id, fields[i].err);
+        errors.push(fields[i].id);
+      } else {
+        clearError(fields[i].id, fields[i].err);
+      }
+    }
+
+    if (errors.length > 0) {
+      document.getElementById(errors[0]).focus();
+      return;
+    }
+
+    success.classList.add('visible');
+    form.style.display = 'none';
+  });
+})();
+
+// ===== FAQ ACCORDION =====
+(function() {
+  var buttons = document.querySelectorAll('.faq-question');
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function() {
+      var item = this.closest('.faq-item');
+      var answer = item.querySelector('.faq-answer');
+      var inner = answer.querySelector('.faq-answer-inner');
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      var toggle = this.querySelector('.faq-toggle');
+
+      if (expanded) {
+        answer.style.maxHeight = '0';
+        this.setAttribute('aria-expanded', 'false');
+        item.classList.remove('open');
+        toggle.textContent = '+';
+      } else {
+        answer.style.maxHeight = inner.scrollHeight + 20 + 'px';
+        this.setAttribute('aria-expanded', 'true');
+        item.classList.add('open');
+        toggle.textContent = '−';
+      }
+    });
+
+    buttons[i].addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.click();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
